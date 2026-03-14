@@ -12,19 +12,49 @@ interface Props {
 
 const CLAUDE_AI_URL = "https://claude.ai/new";
 
+function copyToClipboard(text: string): boolean {
+  try {
+    // Modern API
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  return fallbackCopy(text);
+}
+
+function fallbackCopy(text: string): boolean {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand("copy");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
 export default function PromptViewer({ prompt, systemPrompt, formData, onReset }: Props) {
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedSystem, setCopiedSystem] = useState(false);
   const [activeTab, setActiveTab] = useState<"prompt" | "system">("prompt");
 
   function copyPrompt() {
-    navigator.clipboard.writeText(prompt);
+    copyToClipboard(prompt);
     setCopiedPrompt(true);
     setTimeout(() => setCopiedPrompt(false), 2500);
   }
 
   function copySystem() {
-    navigator.clipboard.writeText(systemPrompt);
+    copyToClipboard(systemPrompt);
     setCopiedSystem(true);
     setTimeout(() => setCopiedSystem(false), 2500);
   }
