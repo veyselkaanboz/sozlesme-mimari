@@ -2,43 +2,22 @@
 
 import { useState } from "react";
 import ContractForm from "@/components/ContractForm";
-import ContractViewer from "@/components/ContractViewer";
+import PromptViewer from "@/components/PromptViewer";
 import { ContractFormData } from "@/lib/types";
+import { SYSTEM_PROMPT, buildUserPrompt } from "@/lib/system-prompt";
 
 export default function Home() {
-  const [contract, setContract] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [prompt, setPrompt] = useState<string>("");
   const [formData, setFormData] = useState<ContractFormData | null>(null);
 
-  async function handleGenerate(data: ContractFormData) {
-    setLoading(true);
-    setError("");
+  function handleGenerate(data: ContractFormData) {
+    const fullPrompt = buildUserPrompt(data);
+    setPrompt(fullPrompt);
     setFormData(data);
-
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formData: data }),
-      });
-
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setError(json.error || "Bir hata oluştu.");
-      } else {
-        setContract(json.contract);
-      }
-    } catch {
-      setError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
-    } finally {
-      setLoading(false);
-    }
   }
 
   function handleReset() {
-    setContract("");
-    setError("");
+    setPrompt("");
     setFormData(null);
   }
 
@@ -72,7 +51,7 @@ export default function Home() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {!contract ? (
+        {!prompt ? (
           <>
             {/* Hero */}
             <div className="mb-8 text-center">
@@ -80,36 +59,34 @@ export default function Home() {
                 Profesyonel Sözleşme Taslağı Oluşturun
               </h2>
               <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
-                Teknik satınalma, hizmet, montaj veya bakım-onarım sözleşmelerinizi;
-                Türk hukuk mevzuatına tam uyumlu ve alıcı odaklı olarak hazırlayın.
+                Formu doldurun, hazır promptu kopyalayın ve Claude.ai&apos;ye yapıştırın — sözleşmeniz hazır.
               </p>
             </div>
 
-            {/* Badges */}
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {["TBK Uyumlu", "KVKK Uyumlu", "TTK Uyumlu", "Alıcı Odaklı", "3 Koruma Seviyesi"].map((b) => (
-                <span key={b}
-                  className="text-xs font-medium bg-brand-50 text-brand-700 border border-brand-100 rounded-full px-3 py-1">
-                  {b}
-                </span>
+            {/* How it works */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {[
+                { step: "1", text: "Formu Doldurun" },
+                { step: "2", text: "Promptu Kopyalayın" },
+                { step: "3", text: "Claude.ai'ye Yapıştırın" },
+                { step: "4", text: "Sözleşmenizi Alın" },
+              ].map((s) => (
+                <div key={s.step} className="flex items-center gap-2 text-sm text-slate-600">
+                  <span className="w-6 h-6 rounded-full bg-brand-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    {s.step}
+                  </span>
+                  {s.text}
+                  {s.step !== "4" && <span className="text-slate-300 ml-1">→</span>}
+                </div>
               ))}
             </div>
 
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-3">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            <ContractForm onSubmit={handleGenerate} loading={loading} />
+            <ContractForm onSubmit={handleGenerate} loading={false} />
           </>
         ) : (
-          <ContractViewer
-            contract={contract}
+          <PromptViewer
+            prompt={prompt}
+            systemPrompt={SYSTEM_PROMPT}
             formData={formData}
             onReset={handleReset}
           />
