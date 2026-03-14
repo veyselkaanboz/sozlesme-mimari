@@ -3,12 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { SYSTEM_PROMPT, buildUserPrompt } from "@/lib/system-prompt";
 import { GenerateContractRequest } from "@/lib/types";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "API anahtarı bulunamadı. .env.local dosyasını kontrol edin." },
+        { status: 500 }
+      );
+    }
+
     const body: GenerateContractRequest = await request.json();
     const { formData } = body;
 
@@ -19,10 +23,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const client = new Anthropic({ apiKey });
     const userPrompt = buildUserPrompt(formData);
 
     const message = await client.messages.create({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-6",
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
@@ -34,8 +39,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ contract: contractText });
   } catch (error) {
     console.error("Contract generation error:", error);
+    const message = error instanceof Error ? error.message : "Bilinmeyen hata";
     return NextResponse.json(
-      { error: "Sözleşme üretilirken bir hata oluştu. Lütfen tekrar deneyin." },
+      { error: `Sözleşme üretilirken hata: ${message}` },
       { status: 500 }
     );
   }
